@@ -19,11 +19,11 @@ export async function getTripBookingInfo(token) {
   }
 }
 
-export async function updateOperationState(token, status) {
+export async function updateOperationState(token, id, status) {
   try {
     const res = await axios({
       method: "PATCH",
-      url: `${BASEAPI_URL}/api/DriverState/UpdatePartial`,
+      url: `${BASEAPI_URL}/api/DriverState/UpdatePartial/${id}`,
       headers: {
         "Content-Type": "application/json",
         Authorization: `Bearer ${token}`,
@@ -32,6 +32,29 @@ export async function updateOperationState(token, status) {
         op: "replace",
         path: "/trangThai",
         value: status,
+      },
+    });
+    if (res.status === 200) {
+      return res.data.result;
+    }
+  } catch (error) {
+    console.log(error);
+  }
+}
+
+export async function updateJourneyState(token, id, path, value) {
+  try {
+    const res = await axios({
+      method: "PATCH",
+      url: `${BASEAPI_URL}/api/Journey/UpdatePartial/${id}`,
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${token}`,
+      },
+      data: {
+        op: "replace",
+        path: `/${path}`,
+        value: value,
       },
     });
     if (res.status === 200) {

@@ -1,4 +1,11 @@
-import { useEffect, useState, useRef, useLayoutEffect } from "react";
+import {
+  useEffect,
+  useState,
+  useRef,
+  useLayoutEffect,
+  useContext,
+} from "react";
+import { AuthContext } from "../context/AuthContext";
 import MapView, { Marker, PROVIDER_GOOGLE, Polyline } from "react-native-maps";
 import * as Location from "expo-location";
 import {
@@ -23,73 +30,22 @@ import Map from "../components/Map";
 import * as signalR from "@microsoft/signalr";
 import { BASEAPI_URL } from "../utils/constant";
 
-const connection = new signalR.HubConnectionBuilder()
-  .withAutomaticReconnect()
-  .withUrl(`${BASEAPI_URL}/hubs/journey`)
-  .configureLogging(signalR.LogLevel.Information)
-  .build();
-
-function TripProcessing({
-  pickedUpCustomer,
-  requestInfo,
-  finishTrip,
-  onPickupHandler,
-  coords,
-  iniRegion,
-}) {
-  return (
-    <View style={{ flex: 1 }}>
-      <View style={{ flex: 1 }}>
-        <Text>NƠI ĐẾN</Text>
-      </View>
-      {pickedUpCustomer ? (
-        <Map fl={{ flex: 2 }} region={iniRegion}>
-          <Marker
-            coordinate={{
-              latitude: requestInfo.startLat,
-              longitude: requestInfo.startLng,
-            }}
-          />
-          <Polyline coordinates={coords} />
-        </Map>
-      ) : (
-        <Map fl={{ flex: 2 }} region={iniRegion}>
-          <Polyline coordinates={coords} />
-        </Map>
-      )}
-
-      <View style={{ flex: 1 }}>
-        <View></View>
-        <View>
-          {!pickedUpCustomer ? (
-            <ButtonModal onPress={onPickupHandler} bgColor="#09c009">
-              <Text style={{ color: "white" }}>ĐÓN KHÁCH</Text>
-            </ButtonModal>
-          ) : (
-            <ButtonModal onPress={finishTrip} bgColor="#09c009">
-              <Text style={{ color: "white" }}>KHÁCH XUỐNG XE</Text>
-            </ButtonModal>
-          )}
-        </View>
-      </View>
-    </View>
-  );
-}
-
 export default function GetLocation({ navigation }) {
+  const [connection, setConnection] = useState();
   const [isOpenModal, setIsOpenModal] = useState(false);
   const [currentLocation, setCurrentLocation] = useState();
-  // const [coords, setCoords] = useState([]);
-  const [requestInfo, setRequestInfo] = useState({
-    startLat: 10.82884,
-    startLng: 106.66659,
-    endLat: 10.82545,
-    endLng: 106.67969,
-  });
-  const [acceptBooking, setAcceptBooking] = useState(false);
+  // const [requestInfo, setRequestInfo] = useState({
+  //   startLat: 10.82884,
+  //   startLng: 106.66659,
+  //   endLat: 10.82545,
+  //   endLng: 106.67969,
+  // });
+  const [requestInfo, setRequestInfo] = useState(null);
+  // const [acceptBooking, setAcceptBooking] = useState(false);
   // const [pickedUpCustomer, setPickedUpCustomer] = useState(false);
   // const [iniRegion, setIniRegion] = useState();
-
+  const authCtx = useContext(AuthContext);
+  const token = authCtx.userToken;
   const mapRef = useRef(null);
   const polyCoords = useRef();
   // const [placeIdStart, setPlaceIdStart] = useState(
@@ -123,8 +79,7 @@ export default function GetLocation({ navigation }) {
   //   });
   // }
 
-  async function onAcceptRequestHandler() {
-    setAcceptBooking(true);
+  function onAcceptRequestHandler() {
     setIsOpenModal(false);
     navigation.navigate("TripProcessing", {
       ...requestInfo,
@@ -133,9 +88,10 @@ export default function GetLocation({ navigation }) {
     });
   }
 
-  function finishTrip() {
-    setAcceptBooking(false);
-    setPickedUpCustomer(false);
+  function denyHandler() {
+    setIsOpenModal(false);
+    setRequestInfo(null);
+    connection.send("SendDenyResponse", requestInfo.userId);
   }
 
   useLayoutEffect(() => {
@@ -162,12 +118,12 @@ export default function GetLocation({ navigation }) {
     getCurrentCoord();
   }, []);
 
-  useEffect(() => {
-    const setModal = setTimeout(() => {
-      setIsOpenModal(true);
-    }, 3000);
-    return () => clearTimeout(setModal);
-  }, []);
+  // useEffect(() => {
+  //   const setModal = setTimeout(() => {
+  //     setIsOpenModal(true);
+  //   }, 3000);
+  //   return () => clearTimeout(setModal);
+  // }, []);
 
   useEffect(() => {
     if (currentLocation) {
@@ -183,38 +139,57 @@ export default function GetLocation({ navigation }) {
     }
   }, [currentLocation]);
 
-  // useEffect(() => {
-  //   connection.on(
-  //     "ReceiveRequestInfo",
-  //     function (
-  //       id,
-  //       name,
-  //       phoneNumber,
-  //       starAddr,
-  //       startLat,
-  //       startLng,
-  //       endAddr,
-  //       endLat,
-  //       endLng
-  //     ) {
-  //       setRequestInfo({
-  //         id,
-  //         name,
-  //         phoneNumber,
-  //         starAddr,
-  //         startLat,
-  //         startLng,
-  //         endAddr,
-  //         endLat,
-  //         endLng,
-  //       });
-  //       setIsOpenModal(true);
-  //     }
-  //   );
+  useEffect(() => {
+    const newconnection = new signalR.HubConnectionBuilder()
+      .withAutomaticReconnect()
+      .withUrl(`${BASEAPI_URL}/hubs/journey`, {
+        accessTokenFactory: () => token,
+      })
+      .configureLogging(signalR.LogLevel.Information)
+      .build();
 
-  //   connection.start().then(console.log("Successful connection"));
-  //   return () => connection.stop();
-  // }, [setRequestInfo, setIsOpenModal]);
+    newconnection
+      .start()
+      .then(() => setConnection(newconnection))
+      .catch((err) => console.log(err));
+    return () => newconnection.stop();
+  }, []);
+
+  useEffect(() => {
+    if (
+      connection &&
+      connection.state === signalR.HubConnectionState.Connected
+    ) {
+      connection.on(
+        "ReceiveRequestInfo",
+        function (
+          userId,
+          name,
+          phoneNumber,
+          startAddr,
+          startLat,
+          startLng,
+          endAddr,
+          endLat,
+          endLng
+        ) {
+          setRequestInfo({
+            userId,
+            name,
+            phoneNumber,
+            startAddr,
+            startLat,
+            startLng,
+            endAddr,
+            endLat,
+            endLng,
+          });
+          setIsOpenModal(true);
+          console.log("hello");
+        }
+      );
+    }
+  }, [connection]);
 
   // useEffect(() => {
   //   let sendCoordInterval = null;
@@ -241,22 +216,10 @@ export default function GetLocation({ navigation }) {
   //   }
   // }, [acceptBooking]);
 
-  console.log(currentLocation, "picked");
+  // console.log(currentLocation, "picked");
+  // console.log(requestInfo);
+  // console.log(authCtx.userToken + "  " + authCtx.userId);
 
-  // if (acceptBooking) {
-  //   return (
-  //     <TripProcessing
-  //       pickedUpCustomer={pickedUpCustomer}
-  //       setAcceptBooking={setAcceptBooking}
-  //       requestInfo={requestInfo}
-  //       finishTrip={finishTrip}
-  //       currentLocation={currentLocation}
-  //       onPickupHandler={onPickupHandler}
-  //       coords={polyCoords.current}
-  //       iniRegion={iniRegion}
-  //     />
-  //   );
-  // }
   return (
     <PaperProvider>
       <OriginalModal visible={isOpenModal} animationType="slide">
@@ -270,36 +233,60 @@ export default function GetLocation({ navigation }) {
             }}
           >
             <View></View>
-            <View
-              style={{
-                width: "100%",
-                backgroundColor: "#ccc",
-                alignItems: "center",
-                justifyContent: "space-around",
-                paddingVertical: 50,
-              }}
-            >
-              <Text style={{ fontSize: 24 }}>ĐIỂM ĐÓN</Text>
-              <Text style={{ fontSize: 18 }}>
-                full address jbmnbmbhkhbnkhgkb 124537fghfhg
-              </Text>
-            </View>
-            <View
-              style={{
-                width: "100%",
-                backgroundColor: "#b1a8a8",
-                alignItems: "center",
-                justifyContent: "space-around",
-                paddingVertical: 50,
-              }}
-            >
-              <Text style={{ fontSize: 24 }}>ĐIỂM ĐẾN</Text>
-              <Text style={{ fontSize: 18 }}>full address</Text>
-            </View>
+            {requestInfo && (
+              <>
+                <View
+                  style={{
+                    width: "100%",
+                    backgroundColor: "#ccc",
+                    alignItems: "center",
+                    justifyContent: "space-around",
+                    paddingVertical: 50,
+                  }}
+                >
+                  <Text style={{ fontSize: 24 }}>
+                    {requestInfo.startAddr.split(",", 1)[0].toUpperCase()}
+                  </Text>
+                  <Text style={{ fontSize: 18 }}>{requestInfo.startAddr}</Text>
+                </View>
+                <View
+                  style={{
+                    width: "100%",
+                    backgroundColor: "#b1a8a8",
+                    alignItems: "center",
+                    justifyContent: "space-around",
+                    paddingVertical: 50,
+                  }}
+                >
+                  <Text style={{ fontSize: 24 }}>
+                    {requestInfo.endAddr.split(",", 1)[0].toUpperCase()}
+                  </Text>
+                  <Text style={{ fontSize: 18 }}>{requestInfo.endAddr}</Text>
+                </View>
+              </>
+            )}
           </View>
-          <ButtonModal onPress={onAcceptRequestHandler} bgColor="#09c009">
-            <Text style={{ color: "white" }}>ĐỒNG Ý NHẬN CUỐC ((TIME))</Text>
-          </ButtonModal>
+          <View
+            style={{
+              flexDirection: "row",
+              justifyContent: "space-between",
+              position: "absolute",
+              bottom: 20,
+              width: "90%",
+              zIndex: 11,
+            }}
+          >
+            <ButtonModal onPress={denyHandler} bgColor="#ecdfdf" width="25%">
+              <Ionicons name="close" size={24} />
+            </ButtonModal>
+            <ButtonModal
+              onPress={onAcceptRequestHandler}
+              bgColor="#09c009"
+              width="70%"
+            >
+              <Text style={{ color: "white" }}>ĐỒNG Ý NHẬN CUỐC ((TIME))</Text>
+            </ButtonModal>
+          </View>
         </View>
       </OriginalModal>
       <InfoModal region={region} visible={!currentLocation}>

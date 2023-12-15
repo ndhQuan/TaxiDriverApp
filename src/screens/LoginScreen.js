@@ -28,7 +28,7 @@ const LoginScreen = ({ navigation }) => {
       console.log(password);
       const user = await login(phone, password);
       if (user) {
-        authCtx.authenticate(user.token);
+        authCtx.authenticate(user);
       }
     } catch (error) {
       Alert.alert("Authentication failed!", "");

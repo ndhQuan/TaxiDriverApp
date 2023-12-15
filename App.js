@@ -13,6 +13,7 @@ import { AuthProvider } from "./src/context/AuthContext";
 import WelcomeScreen from "./src/screens/WelcomeScreen";
 import TripProcessing from "./src/screens/TripProcessing";
 import GetLocation from "./src/screens/GetLocation";
+import Bill from "./src/screens/Bill";
 
 import OnboardingScreen from "./src/screens/OnboardingScreen";
 import LoginScreen from "./src/screens/LoginScreen";
@@ -30,8 +31,9 @@ function AuthenticatedStack() {
       screenOptions={{
         headerRight: () => {
           return (
-            <Pressable onPress={logoutHandler}>
+            <Pressable onPress={logoutHandler} style={{ flexDirection: "row" }}>
               <Ionicons size={20} name="log-out" />
+              <Text> Logout</Text>
             </Pressable>
           );
         },
@@ -44,6 +46,7 @@ function AuthenticatedStack() {
         options={{ title: "Online" }}
       />
       <Stack.Screen name="TripProcessing" component={TripProcessing} />
+      <Stack.Screen name="Bill" component={Bill} />
     </Stack.Navigator>
   );
 }
