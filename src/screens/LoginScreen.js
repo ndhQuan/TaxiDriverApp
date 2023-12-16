@@ -25,7 +25,6 @@ const LoginScreen = ({ navigation }) => {
 
   async function loginHandler(phone, password) {
     try {
-      console.log(password);
       const user = await login(phone, password);
       if (user) {
         authCtx.authenticate(user);

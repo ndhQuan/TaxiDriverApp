@@ -46,3 +46,18 @@ export function convertToPolylineFormat(points) {
     };
   });
 }
+
+export function getFormatedNow() {
+  const now = new Date();
+  let hours = now.getHours() > 9 ? now.getHours() : `0${now.getHours()}`;
+  let minutes =
+    now.getMinutes() > 9 ? now.getMinutes() : `0${now.getMinutes()}`;
+  let seconds =
+    now.getSeconds() > 9 ? now.getSeconds() : `0${now.getSeconds()}`;
+  let miliseconds =
+    now.getMilliseconds() > 9
+      ? now.getMilliseconds()
+      : `0${now.getMilliseconds()}`;
+
+  return `${hours}:${minutes}:${seconds}.${miliseconds}`;
+}

@@ -34,3 +34,24 @@ export async function signUp(name, email, phone, password) {
     return null;
   }
 }
+
+export async function accountInfo(token, id) {
+  try {
+    const res = await axios({
+      method: "GET",
+      url: `${BASEAPI_URL}/api/user/${id}`,
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${token}`,
+      },
+    });
+    if (res.data) {
+      if (res.data.statusCode === 200) return res.data.result;
+      else {
+        return res.data.errorMessages;
+      }
+    }
+  } catch (error) {
+    console.log(error);
+  }
+}

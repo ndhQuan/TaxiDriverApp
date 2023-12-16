@@ -19,6 +19,63 @@ export async function getTripBookingInfo(token) {
   }
 }
 
+export async function getTaxiTypeInfo(token, id) {
+  try {
+    const res = await axios({
+      method: "GET",
+      url: `${BASEAPI_URL}/api/TaxiType/4`,
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${token}`,
+      },
+    });
+    if (res.status === 200) {
+      return res.data.result;
+    }
+  } catch (error) {
+    console.log(error);
+  }
+}
+
+export async function CreateJourney(journeyInfo, token) {
+  try {
+    const res = await axios({
+      method: "POST",
+      url: `${BASEAPI_URL}/api/Journey`,
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${token}`,
+      },
+      data: {
+        ...journeyInfo,
+      },
+    });
+    if (res.status === 201) {
+      return res.data.result;
+    }
+  } catch (error) {
+    console.log(error);
+  }
+}
+
+export async function getDriverState(driverId, token) {
+  try {
+    const res = await axios({
+      method: "GET",
+      url: `${BASEAPI_URL}/api/DriverState/${driverId}`,
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${token}`,
+      },
+    });
+    if (res.status === 200) {
+      return res.data.result;
+    }
+  } catch (error) {
+    console.log(error);
+  }
+}
+
 export async function updateOperationState(token, id, status) {
   try {
     const res = await axios({
@@ -28,13 +85,15 @@ export async function updateOperationState(token, id, status) {
         "Content-Type": "application/json",
         Authorization: `Bearer ${token}`,
       },
-      data: {
-        op: "replace",
-        path: "/trangThai",
-        value: status,
-      },
+      data: [
+        {
+          op: "replace",
+          path: "/trangThai",
+          value: status,
+        },
+      ],
     });
-    if (res.status === 200) {
+    if (res.status === 204) {
       return res.data.result;
     }
   } catch (error) {
@@ -51,11 +110,13 @@ export async function updateJourneyState(token, id, path, value) {
         "Content-Type": "application/json",
         Authorization: `Bearer ${token}`,
       },
-      data: {
-        op: "replace",
-        path: `/${path}`,
-        value: value,
-      },
+      data: [
+        {
+          op: "replace",
+          path: `/${path}`,
+          value: value,
+        },
+      ],
     });
     if (res.status === 200) {
       return res.data.result;

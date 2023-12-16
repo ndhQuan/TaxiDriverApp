@@ -22,7 +22,7 @@ import {
 import { PaperProvider } from "react-native-paper";
 import { Ionicons } from "@expo/vector-icons";
 import { getGeocode, getDirections } from "../api/GoogleMap";
-import { calculateInitialRegion } from "../utils/helper";
+import ButtonToggle from "../components/UI/ButtonToggleOperation";
 
 import InfoModal from "../components/InfoModal";
 import ButtonModal from "../components/ButtonModal";
@@ -41,18 +41,16 @@ export default function GetLocation({ navigation }) {
   //   endLng: 106.67969,
   // });
   const [requestInfo, setRequestInfo] = useState(null);
-  // const [acceptBooking, setAcceptBooking] = useState(false);
-  // const [pickedUpCustomer, setPickedUpCustomer] = useState(false);
-  // const [iniRegion, setIniRegion] = useState();
+  const [countDown, setCountDown] = useState(15);
   const authCtx = useContext(AuthContext);
   const token = authCtx.userToken;
   const mapRef = useRef(null);
   const polyCoords = useRef();
+  const countDownInterval = useRef(null);
   // const [placeIdStart, setPlaceIdStart] = useState(
   //   "ChIJ2U3J2QUpdTER8vO_6Unx4Fk"
   // );
   // const [placeIdEnd, setPlaceIdEnd] = useState("ChIJkdCR-fwodTER-jQabj62D3M");
-  // const [permission, setPermission] = useState(true);
 
   const { width, height } = Dimensions.get("window");
 
@@ -81,6 +79,8 @@ export default function GetLocation({ navigation }) {
 
   function onAcceptRequestHandler() {
     setIsOpenModal(false);
+    setCountDown(15);
+    clearInterval(countDownInterval.current);
     navigation.navigate("TripProcessing", {
       ...requestInfo,
       curLat: currentLocation.lat,
@@ -92,6 +92,8 @@ export default function GetLocation({ navigation }) {
     setIsOpenModal(false);
     setRequestInfo(null);
     connection.send("SendDenyResponse", requestInfo.userId);
+    clearInterval(countDownInterval.current);
+    setCountDown(15);
   }
 
   useLayoutEffect(() => {
@@ -103,8 +105,8 @@ export default function GetLocation({ navigation }) {
       }
 
       let location = await Location.getCurrentPositionAsync({
-        enableHighAccuracy: true,
-        accuracy: Location.Accuracy.High,
+        // enableHighAccuracy: true,
+        // accuracy: Location.Accuracy.High,
       });
       console.log(location, "location");
 
@@ -117,13 +119,6 @@ export default function GetLocation({ navigation }) {
     // return () => clearTimeout(findCoord);
     getCurrentCoord();
   }, []);
-
-  // useEffect(() => {
-  //   const setModal = setTimeout(() => {
-  //     setIsOpenModal(true);
-  //   }, 3000);
-  //   return () => clearTimeout(setModal);
-  // }, []);
 
   useEffect(() => {
     if (currentLocation) {
@@ -185,43 +180,32 @@ export default function GetLocation({ navigation }) {
             endLng,
           });
           setIsOpenModal(true);
-          console.log("hello");
         }
       );
     }
   }, [connection]);
 
-  // useEffect(() => {
-  //   let sendCoordInterval = null;
-  //   if (acceptBooking) {
-  //     connection.send("SendDriverInfo", requestInfo.id);
-  //     sendCoordInterval = setInterval(async () => {
-  //       let location = await Location.getCurrentPositionAsync({
-  //         enableHighAccuracy: true,
-  //         accuracy: Location.Accuracy.High,
-  //       });
-  //       connection.send(
-  //         "SendRealTimeDriverCoords",
-  //         requestInfo.id,
-  //         location.coords.latitude,
-  //         location.coords.longitude
-  //       );
-  //     }, 3000);
-  //   } else {
-  //     stopSendCoords();
-  //   }
-
-  //   function stopSendCoords() {
-  //     if (sendCoordInterval) clearInterval(sendCoordInterval);
-  //   }
-  // }, [acceptBooking]);
-
-  // console.log(currentLocation, "picked");
-  // console.log(requestInfo);
-  // console.log(authCtx.userToken + "  " + authCtx.userId);
+  useEffect(() => {
+    if (isOpenModal) {
+      countDownInterval.current = setInterval(() => {
+        if (countDown == 0) {
+          setIsOpenModal(false);
+          connection.send("SendDenyResponse", requestInfo.userId);
+          clearInterval(countDownInterval.current);
+          setCountDown(15);
+        } else {
+          setCountDown((time) => time - 1);
+        }
+      }, 1000);
+      return () => clearInterval(countDownInterval.current);
+    }
+  }, [isOpenModal, countDown]);
 
   return (
     <PaperProvider>
+      <ButtonToggle
+        styles={{ position: "absolute", top: 40, left: 20, zIndex: 10 }}
+      />
       <OriginalModal visible={isOpenModal} animationType="slide">
         <View style={styles.modalContainer}>
           <View
@@ -284,7 +268,9 @@ export default function GetLocation({ navigation }) {
               bgColor="#09c009"
               width="70%"
             >
-              <Text style={{ color: "white" }}>ĐỒNG Ý NHẬN CUỐC ((TIME))</Text>
+              <Text style={{ color: "white" }}>
+                ĐỒNG Ý NHẬN CUỐC ({countDown})
+              </Text>
             </ButtonModal>
           </View>
         </View>

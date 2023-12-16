@@ -1,6 +1,7 @@
 import { Pressable, StyleSheet, Text, View } from "react-native";
 import CustomButton from "../components/CustomButton";
 import Button from "../components/Button";
+// import ButtonToggle from "../components/UI/ButtonToggleOperation";
 
 export default function WelcomeScreen({ navigation }) {
   function onBookingHandler(e) {
@@ -9,6 +10,7 @@ export default function WelcomeScreen({ navigation }) {
 
   return (
     <View style={styles.container}>
+      {/* <ButtonToggle styles={{ position: "absolute", top: 40, right: 20 }} /> */}
       <View style={styles.text}>
         <Text style={{ fontSize: 20, fontWeight: "bold" }}>
           Welcome, you are logged in
