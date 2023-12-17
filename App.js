@@ -49,6 +49,7 @@ function Home() {
         tabBarActiveBackgroundColor: "#09c009",
         tabBarActiveTintColor: "white",
         tabBarLabelStyle: { color: "black", fontSize: 13 },
+        headerTitle: "Welcome Driver",
       }}
     >
       <Tab.Screen

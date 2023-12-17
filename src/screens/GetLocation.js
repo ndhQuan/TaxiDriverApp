@@ -228,7 +228,10 @@ export default function GetLocation({ navigation }) {
                     paddingVertical: 50,
                   }}
                 >
-                  <Text style={{ fontSize: 24 }}>
+                  <View style={{ width: "100%", alignItems: "center" }}>
+                    <Text>Nơi đón</Text>
+                  </View>
+                  <Text style={{ fontSize: 24, textAlign: "center" }}>
                     {requestInfo.startAddr.split(",", 1)[0].toUpperCase()}
                   </Text>
                   <Text style={{ fontSize: 18 }}>{requestInfo.startAddr}</Text>
@@ -242,7 +245,10 @@ export default function GetLocation({ navigation }) {
                     paddingVertical: 50,
                   }}
                 >
-                  <Text style={{ fontSize: 24 }}>
+                  <View style={{ width: "100%", alignItems: "center" }}>
+                    <Text>Nơi đến</Text>
+                  </View>
+                  <Text style={{ fontSize: 24, textAlign: "center" }}>
                     {requestInfo.endAddr.split(",", 1)[0].toUpperCase()}
                   </Text>
                   <Text style={{ fontSize: 18 }}>{requestInfo.endAddr}</Text>
